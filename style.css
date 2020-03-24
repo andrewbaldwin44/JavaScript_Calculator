@@ -1,0 +1,67 @@
+html {
+  font-size: 24px;
+}
+
+#calculatorBody {
+  background-color: rgb(92, 92, 92);
+  height: auto;
+  width: 30vw;
+  margin: 20vh auto;
+  padding: 20px;
+}
+
+#history {
+  background-color: white;
+  height: 30vh;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+#display {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  text-align: right;
+  background-color: white;
+  width: 100%;
+  height: 6vh;
+  margin-bottom: 20px;
+}
+#input, #expression {
+  padding-right: 10px;
+}
+
+#inputButtons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-gap: 10px;
+}
+
+#button1 {grid-area: 4/1/4/1}
+#button3 {grid-area: 4/3/4/3}
+#button4 {grid-area: 3/1/3/1}
+#button6 {grid-area: 3/3/3/3}
+#button7 {grid-area: 2/1/2/1}
+#button9 {grid-area: 2/3/2/3}
+
+#del {grid-area: 1/1/1/1}
+#posNeg {grid-area: 1/2/1/2}
+#decimal {grid-area: 1/3/1/3}
+#clear {grid-area: 1/4/1/4}
+#multiply {grid-area: 2/4/2/4}
+#divide {grid-area: 3/4/3/4}
+#subtract {grid-area: 4/4/4/4}
+#add {grid-area: 5/4/5/4}
+#equal {
+  grid-area: 5/2/5/4;
+  background-color: rgb(39, 100, 221);
+}
+
+
+.buttons {
+  border: none;
+  font-size: inherit;
+  padding: 5px;
+}
+.operationButtons {
+  background: orange;
+}
