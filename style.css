@@ -1,20 +1,73 @@
 html {
+  font-family: sans-serif;
   font-size: 24px;
+  overflow-y: hidden;
+}
+
+#calculatorBody, #history, #display {
+  border: 2px solid black;
+  border-radius: 5px;
 }
 
 #calculatorBody {
-  background-color: rgb(92, 92, 92);
+  position: absolute;
   height: auto;
-  width: 30vw;
-  margin: 20vh auto;
+  width: 23vw;
   padding: 20px;
+  margin-top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgb(202, 202, 202);
+}
+
+#clearHistory {
+  position: absolute;
+  cursor: pointer;
+  font-size: 22px;
+  right: 7%;
+  padding-top: 5px;
+  color: red;
+  border: none;
+  outline: none;
+  background-color: white;
+}
+#clearHistory .tooltip {
+  position: absolute;
+  opacity: 0;
+  font-size: 16px;
+  text-align: center;
+  width: 120px;
+  left: 50%;
+  padding: 0;
+  bottom: 100%;
+  margin-left: -70px;
+  border: 1px solid black;
+  border-radius: 3px;
+  color: black;
+  background-color: white;
+}
+#clearHistory:hover .tooltip {
+  animation-name: tooltip;
+  animation-duration: 1s;
+  animation-fill-mode: forwards;
+}
+@keyframes tooltip {
+  90% {opacity: 0}
+  100% {opacity: 1}
 }
 
 #history {
+  display: grid;
+  grid-template-columns: 100%;
+  grid-template-rows: repeat(auto-fit, minmax(1.8rem, 1rem));
   background-color: white;
-  height: 30vh;
+  height: 9rem;
   width: 100%;
   margin-bottom: 20px;
+  overflow-y: scroll;
+}
+.storedExpressions {
+  padding: 10px;
 }
 
 #display {
@@ -23,12 +76,13 @@ html {
   text-align: right;
   background-color: white;
   width: 100%;
-  height: 6vh;
+  height: 3rem;
   margin-bottom: 20px;
 }
 #input, #expression {
-  padding-right: 10px;
+  padding: 5px 10px;
 }
+
 
 #inputButtons {
   display: grid;
@@ -53,15 +107,42 @@ html {
 #add {grid-area: 5/4/5/4}
 #equal {
   grid-area: 5/2/5/4;
-  background-color: rgb(39, 100, 221);
+  background-color: rgb(0, 143, 247);
 }
 
+#equal:hover {
+  background-color: rgb(0, 163, 267);
+}
 
 .buttons {
-  border: none;
+  border: 1px solid black;
+  border-radius: 3px;
   font-size: inherit;
   padding: 5px;
+  background-color: rgb(240, 240, 240);
 }
 .operationButtons {
-  background: orange;
+  background-color: rgb(255, 138, 0);
+}
+.operationButtons:hover {
+  background-color: rgb(285, 168, 30);
+}
+.numberButtons:hover {
+  background-color: rgb(255, 255, 255);
+}
+
+@media (max-width: 900px) {
+  #calculatorBody {
+    margin-top: 10px;
+    height: auto;
+    width: 90vw;
+  }
+  #clearHistory {right: 5%}
+}
+
+@media (max-width: 1200px) {
+  #calculatorBody {
+    width: 70vw;
+  }
+  #clearHistory {right: 5%}
 }
