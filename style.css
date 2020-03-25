@@ -2,6 +2,7 @@ html {
   font-family: sans-serif;
   font-size: 24px;
   overflow-y: hidden;
+  overflow-x: hidden;
 }
 
 #calculatorBody, #history, #display {
@@ -21,7 +22,7 @@ html {
 }
 
 #clearHistory {
-  position: absolute;
+  position: fixed;
   cursor: pointer;
   font-size: 22px;
   right: 7%;
@@ -83,7 +84,6 @@ html {
   padding: 5px 10px;
 }
 
-
 #inputButtons {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -132,12 +132,46 @@ html {
 }
 
 @media (max-width: 900px) {
-  #calculatorBody {
-    margin-top: 10px;
-    height: auto;
-    width: 90vw;
+  html {
+    font-size: 34px;
   }
-  #clearHistory {right: 5%}
+  #calculatorBody {
+    margin: 0;
+    top: 0;
+    left: 0;
+    transform: none;
+    height: 99vh;
+    width: 100vw;
+    padding: 0;
+    background-color: transparent;
+    border: none;
+  }
+
+  #clearHistory {
+    position: fixed;
+    font-size: 32px;
+  }
+  #history {
+    width: 99.5vw;
+    height: 28vh;
+  }
+  #display {
+    width: 99.5vw;
+  }
+  #inputButtons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-gap: 0px;
+  }
+  .buttons {
+    font-size: 44px;
+    height: 10vh;
+    width: 25vw;
+    border-radius: 0px;
+  }
+  #equal {
+    width: 50vw;
+  }
 }
 
 @media (max-width: 1200px) {

@@ -17,6 +17,8 @@ const operations = [
   {name: "del", symbol: "del"}
 ];
 
+let round = float => Math.round(float * 1000000000000) / 1000000000000;
+
 window.onload = function() {
   clear();
   createNumbers();
@@ -54,7 +56,7 @@ function inputNumbers(number) {
     clear();
   }
 
-  input.textContent += number;
+  if (input.textContent.length <= 15) input.textContent += number;
 }
 
 function addDecimal() {
@@ -98,8 +100,9 @@ function clearHistory() {
 }
 
 function loadHistory() {
-  let historyArray = JSON.parse(localStorage.history);
+  if (!localStorage.history) return;
 
+  let historyArray = JSON.parse(localStorage.history);
   historyArray.map(item => updateHistory(item.expression, item.result));
 }
 
@@ -144,9 +147,11 @@ function evaluate() {
 
   while (evalItems.includes("/") || evalItems.includes("*")) {
     let divIndex = evalItems.indexOf("/");
-    let multIndex = evalItems.indexOf("*");
+    let multIndex = evalItems.indexOf("*"); //If no occurence, index = -1
 
-    if (divIndex > multIndex) {
+    //If both multiply and divide needed, left to right
+    //Else just divide
+    if (divIndex > 0 && (divIndex < multIndex || multIndex < 0)) {
       let divResult = evalItems[divIndex-1] / evalItems[divIndex+1];
 
       if (evalItems[divIndex+1] == 0) divResult = undefined;
@@ -154,8 +159,10 @@ function evaluate() {
       evalItems.splice(divIndex-1, 3, divResult);
     }
 
-    if (multIndex > divIndex) {
+    //Only multiply after divisions
+    if (multIndex > 0 && (multIndex < divIndex || divIndex < 0)) {
       let multResult = evalItems[multIndex-1] * evalItems[multIndex+1];
+
       evalItems.splice(multIndex-1, 3, multResult);
     }
   }
@@ -164,23 +171,26 @@ function evaluate() {
     let addIndex = evalItems.indexOf("+");
     let subIndex = evalItems.indexOf("-");
 
-    if (addIndex > subIndex) {
+    //Left to right or just add
+    if (addIndex > 0 && (addIndex < subIndex || subIndex < 0)) {
       let addResult = Number(evalItems[addIndex-1]) + Number(evalItems[addIndex+1]);
       evalItems.splice(addIndex-1, 3, addResult);
     }
 
-    if (subIndex > addIndex) {
+    if (subIndex > 0 && (subIndex < addIndex || addIndex < 0)) {
       let subResult = Number(evalItems[subIndex-1]) - Number(evalItems[subIndex+1]);
       evalItems.splice(subIndex-1, 3, subResult);
     }
   }
   clear();
 
-  input.textContent = evalItems[0];
+  let roundedResult = round(evalItems[0]);
+
+  input.textContent = roundedResult;
   input.classList.toggle("evalMode");
 
-  updateHistory(evalExpression, evalItems[0]);
-  setLocalStorage(evalExpression, evalItems[0]);
+  updateHistory(evalExpression, roundedResult);
+  setLocalStorage(evalExpression, roundedResult);
 }
 
 function createNumbers() {
