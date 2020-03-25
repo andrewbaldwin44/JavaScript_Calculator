@@ -36,13 +36,20 @@ function clear() {
 clearHistoryButton.addEventListener("click", clearHistory);
 
 function del() {
+  if (input.textContent == "") {
+    let lastItem = expression.textContent.slice(-1);
+    
+    lastItem == " " //Ignore Spaces
+      ? expression.textContent = expression.textContent.slice(0, -2)
+      : expression.textContent = expression.textContent.slice(0, -1);
+  }
   input.textContent = input.textContent.slice(0, -1);
 }
 
 function addKeyboard(e) {
   if (e.key >= 0 && e.key <= 9) inputNumbers(e.key);
   if (e.key == "-") turnNegative();
-  //Evoke expresison function if operation key is pressed
+  //Evoke expression function if operation key is pressed
   if (expressionList.includes(e.key)) updateExpression(e.key);
   if (e.key == ".") addDecimal();
   if (e.key == "Backspace") del();

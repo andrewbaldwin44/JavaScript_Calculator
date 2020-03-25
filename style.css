@@ -173,10 +173,3 @@ html {
     width: 50vw;
   }
 }
-
-@media (max-width: 1200px) {
-  #calculatorBody {
-    width: 70vw;
-  }
-  #clearHistory {right: 5%}
-}
