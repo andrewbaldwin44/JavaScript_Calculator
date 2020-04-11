@@ -1,249 +1,251 @@
-const history = document.querySelector("#history");
-const clearHistoryButton = document.querySelector("#clearHistory");
-const input = document.querySelector("#input");
-const expression = document.querySelector("#expression");
-const inputButtons = document.querySelector("#inputButtons");
+class Calculator {
+  constructor() {
+    this.history = document.querySelector("#history");
+    this.clearHistoryButton = document.querySelector("#clearHistory");
+    this.input = document.querySelector("#input");
+    this.expression = document.querySelector("#expression");
+    this.inputButtons = document.querySelector("#inputButtons");
+    this.expressionList = ["+", "-", "*", "/"];
+    this.operations = [
+      {name: "add", symbol: "+"},
+      {name: "subtract", symbol: "-"},
+      {name: "multiply", symbol: "*"},
+      {name: "divide", symbol: "/"},
+      {name: "equal", symbol: "="},
+      {name: "clear", symbol: "AC"},
+      {name: "decimal", symbol: "."},
+      {name: "posNeg", symbol: "+/-"},
+      {name: "del", symbol: "del"}
+    ];
 
-const expressionList = ["+", "-", "*", "/"];
-const operations = [
-  {name: "add", symbol: "+"},
-  {name: "subtract", symbol: "-"},
-  {name: "multiply", symbol: "*"},
-  {name: "divide", symbol: "/"},
-  {name: "equal", symbol: "="},
-  {name: "clear", symbol: "AC"},
-  {name: "decimal", symbol: "."},
-  {name: "posNeg", symbol: "+/-"},
-  {name: "del", symbol: "del"}
-];
+    this.operations.map(operation => this.createOperations(operation));
+    this.clearHistoryButton.addEventListener("click", clearHistory);
+    this.round = float => Math.round(float * 1e12) / 1e12;
+  }
 
-let round = float => Math.round(float * 1000000000000) / 1000000000000;
+  createNumbers() {
+    for (let i = 9; i >= 0; i--) {
+      this.numberButton = document.createElement("button");
+      this.numberButton.setAttribute("class", "buttons");
+      this.numberButton.classList.add("numberButtons");
+      this.numberButton.setAttribute("id", `button${i}`);
+      this.numberButton.textContent = i;
 
-window.onload = function() {
-  clear();
-  createNumbers();
-  operations.map(operation => createOperations(operation));
-  loadHistory();
+      this.numberButton.addEventListener("click", () => this.inputNumbers(i));
+
+      this.inputButtons.append(this.numberButton);
+    }
+  }
+
+  createOperations(operation) {
+    this.opButton = document.createElement("button");
+    this.opButton.setAttribute("class", "buttons");
+    this.opButton.classList.add("operationButtons");
+    this.opButton.setAttribute("id", operation.name);
+    this.opButton.textContent = operation.symbol;
+
+    //functions for add, subtract, multiply, divide
+    if (this.expressionList.includes(operation.symbol)) {
+      this.opButton.addEventListener("click", () => this.updateExpression(operation.symbol));
+    }
+
+    if (operation.name == "decimal") {
+      this.opButton.addEventListener("click", () => this.addDecimal());
+    }
+
+    if (operation.name == "posNeg") {
+      this.opButton.addEventListener("click", () => this.turnNegative());
+    }
+
+    if (operation.name == "clear") {
+      this.opButton.addEventListener("click", () => this.clear());
+    }
+
+    if (operation.name == "del") {
+      this.opButton.addEventListener("click", () => this.del());
+    }
+
+    if (operation.name == "equal") {
+      this.opButton.addEventListener("click", () => this.evaluate());
+    }
+
+    this.inputButtons.append(this.opButton);
+  }
+
+  inputNumbers(number) {
+    if (this.input.classList.contains("evalMode")) {
+      this.input.classList.toggle("evalMode");
+      this.clear();
+    }
+
+    if (this.input.textContent.length <= 15) this.input.textContent += number;
+  }
+
+  updateExpression(operation) {
+    if (this.input.classList.contains("evalMode")) this.input.classList.toggle("evalMode");
+
+    this.lastItem = this.expression.textContent.slice(-2, -1);
+
+    //Don't allow operation insert if inputs are blank and don't allow 2 symbols in a row
+    //Ignore negative symbol
+    if ((this.lastItem != "" && !this.expressionList.includes(this.lastItem) ||
+        this.input.textContent != "") && this.input.textContent != "-") {
+      this.expression.textContent += `${this.input.textContent} ${operation} `;
+      this.input.textContent = "";
+    }
+  }
+
+  addDecimal() {
+    //Only one decimal point per number
+    //Add zero if no number preceding decimal
+    if (!this.input.textContent.includes(".")) {
+       if (!Number(this.input.textContent.slice(-1))) this.input.textContent += 0;
+      this.input.textContent += ".";
+    }
+  }
+
+  turnNegative() {
+    if (this.input.classList.contains("evalMode")) {
+      this.input.classList.toggle("evalMode");
+      this.clear();
+    }
+
+    this.lastItem = this.input.textContent.slice(-1);
+
+    if (!Number(this.lastItem) && this.lastItem != "-") {
+      this.input.textContent += "-";
+    }
+  }
+
+  clear() {
+    this.input.textContent = "";
+    this.expression.textContent = "";
+  }
+
+  del() {
+    if (this.input.textContent == "") {
+      this.lastItem = this.expression.textContent.slice(-1);
+
+      this.lastItem == " " //Ignore Spaces
+        ? this.expression.textContent = expression.textContent.slice(0, -2)
+        : this.expression.textContent = expression.textContent.slice(0, -1);
+    }
+    this.input.textContent = this.input.textContent.slice(0, -1);
+  }
+
+  evaluate() {
+    if (this.input.textContent == "" || this.expression.textContent == "") return;
+
+    this.evalExpression = this.expression.textContent + this.input.textContent;
+    this.evalItems = this.evalExpression.split(" ");
+
+    while (this.evalItems.includes("/") || this.evalItems.includes("*")) {
+      this.divIndex = this.evalItems.indexOf("/");
+      this.multIndex = this.evalItems.indexOf("*"); //If no occurence, index = -1
+
+      //If both multiply and divide, left to right
+      //Else just divide
+      if (this.divIndex > 0 && (this.divIndex < this.multIndex || this.multIndex < 0)) {
+        this.divResult = this.evalItems[this.divIndex-1] / this.evalItems[this.divIndex+1];
+
+        if (this.evalItems[this.divIndex+1] == 0) this.divResult = undefined;
+
+        this.evalItems.splice(this.divIndex-1, 3, this.divResult);
+      }
+
+      //Only multiply after divisions
+      if (this.multIndex > 0 && (this.multIndex < this.divIndex || this.divIndex < 0)) {
+        this.multResult = this.evalItems[this.multIndex-1] * this.evalItems[this.multIndex+1];
+
+        this.evalItems.splice(this.multIndex-1, 3, this.multResult);
+      }
+    }
+
+    while (this.evalItems.includes("+") || this.evalItems.includes("-")) {
+      this.addIndex = this.evalItems.indexOf("+");
+      this.subIndex = this.evalItems.indexOf("-");
+
+      //Left to right or just add
+      if (this.addIndex > 0 && (this.addIndex < this.subIndex || this.subIndex < 0)) {
+        this.addResult = Number(this.evalItems[this.addIndex-1]) + Number(this.evalItems[this.addIndex+1]);
+        this.evalItems.splice(this.addIndex-1, 3, this.addResult);
+      }
+
+      if (this.subIndex > 0 && (this.subIndex < this.addIndex || this.addIndex < 0)) {
+        this.subResult = Number(this.evalItems[this.subIndex-1]) - Number(this.evalItems[this.subIndex+1]);
+        this.evalItems.splice(this.subIndex-1, 3, this.subResult);
+      }
+    }
+    this.clear();
+
+    this.roundedResult = this.round(this.evalItems[0]);
+
+    this.input.textContent = this.roundedResult;
+    this.input.classList.toggle("evalMode");
+
+    this.updateHistory(this.evalExpression, this.roundedResult);
+    this.setLocalStorage(this.evalExpression, this.roundedResult);
+  }
+
+  setLocalStorage(evalExpression, result) {
+    this.newExpression = {expression: evalExpression, result: result};
+    this.historyArray = [];
+
+    if (localStorage.history) this.historyArray = JSON.parse(localStorage.history);
+
+    this.historyArray.push(this.newExpression);
+
+    localStorage.setItem("history", JSON.stringify(this.historyArray));
+  }
+
+  loadHistory() {
+    if (!localStorage.history) return;
+
+    this.historyArray = JSON.parse(localStorage.history);
+    this.historyArray.map(item => this.updateHistory(item.expression, item.result));
+  }
+
+  updateHistory(evalExpression, result) {
+    this.storedExpression = document.createElement("span");
+    this.storedExpression.setAttribute("class", "storedExpressions");
+    this.storedExpression.textContent = `${evalExpression} = ${result}`
+
+    //limit storage to 10 expressions
+    if (this.history.children.length >= 10) {
+      this.history.removeChild(this.history.children[0]);
+
+      this.historyArray = JSON.parse(localStorage.history)
+      this.historyArray.splice(0, 1);
+      localStorage.setItem("history", JSON.stringify(this.historyArray));
+    }
+
+    this.history.append(this.storedExpression);
+
+    this.history.scrollTop = this.history.scrollHeight;
+  }
+
+  clearHistory() {
+    for (i = this.history.children.length - 1; i > 0; i--) {
+      this.history.removeChild(this.history.children[i]);
+      localStorage.clear();
+    }
+  }
 }
+
+let calculator = new Calculator();
+calculator.createNumbers();
+calculator.loadHistory();
 
 window.addEventListener("keydown", addKeyboard);
 
-function clear() {
-  input.textContent = "";
-  expression.textContent = "";
-}
-
-clearHistoryButton.addEventListener("click", clearHistory);
-
-function del() {
-  if (input.textContent == "") {
-    let lastItem = expression.textContent.slice(-1);
-    
-    lastItem == " " //Ignore Spaces
-      ? expression.textContent = expression.textContent.slice(0, -2)
-      : expression.textContent = expression.textContent.slice(0, -1);
-  }
-  input.textContent = input.textContent.slice(0, -1);
-}
-
 function addKeyboard(e) {
-  if (e.key >= 0 && e.key <= 9) inputNumbers(e.key);
-  if (e.key == "-") turnNegative();
+  e.preventDefault();
+  if (e.key >= 0 && e.key <= 9) calculator.inputNumbers(e.key);
+  if (e.key == "-") calculator.turnNegative();
   //Evoke expression function if operation key is pressed
-  if (expressionList.includes(e.key)) updateExpression(e.key);
-  if (e.key == ".") addDecimal();
-  if (e.key == "Backspace") del();
-  if (e.key == "c") clear();
-  if (e.key == "Enter" || e.key == "=") evaluate();
-}
-
-function inputNumbers(number) {
-  if (input.classList.contains("evalMode")) {
-    input.classList.toggle("evalMode");
-    clear();
-  }
-
-  if (input.textContent.length <= 15) input.textContent += number;
-}
-
-function addDecimal() {
-  //Only one decimal point per number
-  //Add zero if no number preceding decimal
-  if (!input.textContent.includes(".")) {
-     if (!Number(input.textContent.slice(-1))) input.textContent += 0;
-    input.textContent += ".";
-  }
-}
-
-function turnNegative() {
-  if (input.classList.contains("evalMode")) {
-    input.classList.toggle("evalMode");
-    clear();
-  }
-
-  let lastItem = input.textContent.slice(-1);
-
-  if (!Number(lastItem) && lastItem != "-") {
-    input.textContent += "-";
-  }
-}
-
-function setLocalStorage(evalExpression, result) {
-  let newExpression = {expression: evalExpression, result: result};
-  let historyArray = [];
-
-  if (localStorage.history) historyArray = JSON.parse(localStorage.history);
-
-  historyArray.push(newExpression);
-
-  localStorage.setItem("history", JSON.stringify(historyArray));
-}
-
-function clearHistory() {
-  for (i = history.children.length - 1; i > 0; i--) {
-    history.removeChild(history.children[i]);
-    localStorage.clear();
-  }
-}
-
-function loadHistory() {
-  if (!localStorage.history) return;
-
-  let historyArray = JSON.parse(localStorage.history);
-  historyArray.map(item => updateHistory(item.expression, item.result));
-}
-
-function updateHistory(evalExpression, result) {
-  let storedExpression = document.createElement("span");
-  storedExpression.setAttribute("class", "storedExpressions");
-  storedExpression.textContent = `${evalExpression} = ${result}`
-
-  //limit storage to 10 expressions
-  if (history.children.length >= 10) {
-    history.removeChild(history.children[0]);
-
-    let historyArray = JSON.parse(localStorage.history)
-    historyArray.splice(0, 1);
-    localStorage.setItem("history", JSON.stringify(historyArray));
-  }
-
-  history.append(storedExpression);
-
-  history.scrollTop = history.scrollHeight;
-}
-
-function updateExpression(operation) {
-  if (input.classList.contains("evalMode")) input.classList.toggle("evalMode");
-
-  let lastItem = expression.textContent.slice(-2, -1);
-
-  //Don't allow operation insert if inputs are blank and don't allow 2 symbols in a row
-  //Ignore negative symbol
-  if ((lastItem != "" && !expressionList.includes(lastItem) || input.textContent != "") &&
-        input.textContent != "-") {
-    expression.textContent += `${input.textContent} ${operation} `;
-    input.textContent = "";
-  }
-}
-
-function evaluate() {
-  if (input.textContent == "" || expression.textContent == "") return;
-
-  let evalExpression = expression.textContent + input.textContent;
-  let evalItems = evalExpression.split(" ");
-
-  while (evalItems.includes("/") || evalItems.includes("*")) {
-    let divIndex = evalItems.indexOf("/");
-    let multIndex = evalItems.indexOf("*"); //If no occurence, index = -1
-
-    //If both multiply and divide needed, left to right
-    //Else just divide
-    if (divIndex > 0 && (divIndex < multIndex || multIndex < 0)) {
-      let divResult = evalItems[divIndex-1] / evalItems[divIndex+1];
-
-      if (evalItems[divIndex+1] == 0) divResult = undefined;
-
-      evalItems.splice(divIndex-1, 3, divResult);
-    }
-
-    //Only multiply after divisions
-    if (multIndex > 0 && (multIndex < divIndex || divIndex < 0)) {
-      let multResult = evalItems[multIndex-1] * evalItems[multIndex+1];
-
-      evalItems.splice(multIndex-1, 3, multResult);
-    }
-  }
-
-  while (evalItems.includes("+") || evalItems.includes("-")) {
-    let addIndex = evalItems.indexOf("+");
-    let subIndex = evalItems.indexOf("-");
-
-    //Left to right or just add
-    if (addIndex > 0 && (addIndex < subIndex || subIndex < 0)) {
-      let addResult = Number(evalItems[addIndex-1]) + Number(evalItems[addIndex+1]);
-      evalItems.splice(addIndex-1, 3, addResult);
-    }
-
-    if (subIndex > 0 && (subIndex < addIndex || addIndex < 0)) {
-      let subResult = Number(evalItems[subIndex-1]) - Number(evalItems[subIndex+1]);
-      evalItems.splice(subIndex-1, 3, subResult);
-    }
-  }
-  clear();
-
-  let roundedResult = round(evalItems[0]);
-
-  input.textContent = roundedResult;
-  input.classList.toggle("evalMode");
-
-  updateHistory(evalExpression, roundedResult);
-  setLocalStorage(evalExpression, roundedResult);
-}
-
-function createNumbers() {
-  for (i = 9; i >= 0; i--) {
-    let button = document.createElement("button");
-    button.setAttribute("class", "buttons");
-    button.classList.add("numberButtons");
-    button.setAttribute("id", `button${i}`);
-    button.textContent = i;
-
-    button.addEventListener("click", () => inputNumbers(button.id.replace(/\D/g, "")));
-
-    inputButtons.append(button);
-  }
-}
-
-function createOperations(operation) {
-  let button = document.createElement("button");
-  button.setAttribute("class", "buttons");
-  button.classList.add("operationButtons");
-  button.setAttribute("id", operation.name);
-  button.textContent = operation.symbol;
-
-  if (expressionList.includes(operation.symbol)) {
-    button.addEventListener("click", () => updateExpression(operation.symbol));
-  }
-
-  if (operation.name == "decimal") {
-    button.addEventListener("click", addDecimal);
-  }
-
-  if (operation.name == "posNeg") {
-    button.addEventListener("click", turnNegative);
-  }
-
-  if (operation.name == "clear") {
-    button.addEventListener("click", clear);
-  }
-
-  if (operation.name == "del") {
-    button.addEventListener("click", del);
-  }
-
-  if (operation.name == "equal") {
-    button.addEventListener("click", () => {evaluate()});
-  }
-
-  inputButtons.append(button);
+  if (calculator.expressionList.includes(e.key)) calculator.updateExpression(e.key);
+  if (e.key == ".") calculator.addDecimal();
+  if (e.key == "Backspace") calculator.del();
+  if (e.key == "c") calculator.clear();
+  if (e.key == "Enter" || e.key == "=") calculator.evaluate();
 }
