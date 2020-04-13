@@ -7,19 +7,50 @@ class Calculator {
     this.inputButtons = document.querySelector("#inputButtons");
     this.expressionList = ["+", "-", "*", "/"];
     this.operations = [
-      {name: "add", symbol: "+"},
-      {name: "subtract", symbol: "-"},
-      {name: "multiply", symbol: "*"},
-      {name: "divide", symbol: "/"},
-      {name: "equal", symbol: "="},
-      {name: "clear", symbol: "AC"},
-      {name: "decimal", symbol: "."},
-      {name: "posNeg", symbol: "+/-"},
-      {name: "del", symbol: "del"}
+      {
+        name: "add",
+        symbol: "+",
+        function: () => {return this.a + this.b}
+      },
+      {
+        name: "subtract",
+        symbol: "-",
+        function: () => {return this.a - this.b}
+      },
+      {
+        name: "multiply",
+        symbol: "*",
+        function: () => {return this.a * this.b}
+      },
+      {
+        name: "divide",
+        symbol: "/",
+        function: () => {return this.b == 0 ? undefined : this.a / this.b}
+      },
+      {
+        name: "equal",
+        symbol: "="
+      },
+      {
+        name: "clear",
+        symbol: "AC"
+      },
+      {
+        name: "decimal",
+        symbol: "."
+      },
+      {
+        name: "posNeg",
+        symbol: "+/-"
+      },
+      {
+        name: "del",
+        symbol: "del"
+      }
     ];
 
     this.operations.map(operation => this.createOperations(operation));
-    this.clearHistoryButton.addEventListener("click", clearHistory);
+    this.clearHistoryButton.addEventListener("click", () => this.clearHistory());
     this.round = float => Math.round(float * 1e12) / 1e12;
   }
 
@@ -73,11 +104,7 @@ class Calculator {
   }
 
   inputNumbers(number) {
-    if (this.input.classList.contains("evalMode")) {
-      this.input.classList.toggle("evalMode");
-      this.clear();
-    }
-
+    if (this.input.classList.contains("evalMode")) this.toggleEvalMode();
     if (this.input.textContent.length <= 15) this.input.textContent += number;
   }
 
@@ -88,8 +115,8 @@ class Calculator {
 
     //Don't allow operation insert if inputs are blank and don't allow 2 symbols in a row
     //Ignore negative symbol
-    if ((this.lastItem != "" && !this.expressionList.includes(this.lastItem) ||
-        this.input.textContent != "") && this.input.textContent != "-") {
+    if ((this.expression.textContent && !this.expressionList.includes(this.lastItem) ||
+        this.input.textContent) && this.input.textContent != "-") {
       this.expression.textContent += `${this.input.textContent} ${operation} `;
       this.input.textContent = "";
     }
@@ -97,7 +124,7 @@ class Calculator {
 
   addDecimal() {
     //Only one decimal point per number
-    //Add zero if no number preceding decimal
+    //Add zero if no number preceding number
     if (!this.input.textContent.includes(".")) {
        if (!Number(this.input.textContent.slice(-1))) this.input.textContent += 0;
       this.input.textContent += ".";
@@ -105,10 +132,7 @@ class Calculator {
   }
 
   turnNegative() {
-    if (this.input.classList.contains("evalMode")) {
-      this.input.classList.toggle("evalMode");
-      this.clear();
-    }
+    if (this.input.classList.contains("evalMode")) this.toggleEvalMode();
 
     this.lastItem = this.input.textContent.slice(-1);
 
@@ -123,72 +147,81 @@ class Calculator {
   }
 
   del() {
-    if (this.input.textContent == "") {
+    if (!this.input.textContent) {
       this.lastItem = this.expression.textContent.slice(-1);
 
       this.lastItem == " " //Ignore Spaces
-        ? this.expression.textContent = expression.textContent.slice(0, -2)
-        : this.expression.textContent = expression.textContent.slice(0, -1);
+        ? this.expression.textContent = this.expression.textContent.slice(0, -2)
+        : this.expression.textContent = this.expression.textContent.slice(0, -1);
     }
     this.input.textContent = this.input.textContent.slice(0, -1);
   }
 
+  toggleEvalMode() {
+    this.input.classList.toggle("evalMode");
+    this.clear();
+  }
+
   evaluate() {
-    if (this.input.textContent == "" || this.expression.textContent == "") return;
+    if (!this.input.textContent || !this.expression.textContent) return;
 
     this.evalExpression = this.expression.textContent + this.input.textContent;
     this.evalItems = this.evalExpression.split(" ");
 
-    while (this.evalItems.includes("/") || this.evalItems.includes("*")) {
-      this.divIndex = this.evalItems.indexOf("/");
-      this.multIndex = this.evalItems.indexOf("*"); //If no occurence, index = -1
+    this.performAllOperations("*", "/");
+    this.performAllOperations("+", "-");
 
-      //If both multiply and divide, left to right
-      //Else just divide
-      if (this.divIndex > 0 && (this.divIndex < this.multIndex || this.multIndex < 0)) {
-        this.divResult = this.evalItems[this.divIndex-1] / this.evalItems[this.divIndex+1];
-
-        if (this.evalItems[this.divIndex+1] == 0) this.divResult = undefined;
-
-        this.evalItems.splice(this.divIndex-1, 3, this.divResult);
-      }
-
-      //Only multiply after divisions
-      if (this.multIndex > 0 && (this.multIndex < this.divIndex || this.divIndex < 0)) {
-        this.multResult = this.evalItems[this.multIndex-1] * this.evalItems[this.multIndex+1];
-
-        this.evalItems.splice(this.multIndex-1, 3, this.multResult);
-      }
-    }
-
-    while (this.evalItems.includes("+") || this.evalItems.includes("-")) {
-      this.addIndex = this.evalItems.indexOf("+");
-      this.subIndex = this.evalItems.indexOf("-");
-
-      //Left to right or just add
-      if (this.addIndex > 0 && (this.addIndex < this.subIndex || this.subIndex < 0)) {
-        this.addResult = Number(this.evalItems[this.addIndex-1]) + Number(this.evalItems[this.addIndex+1]);
-        this.evalItems.splice(this.addIndex-1, 3, this.addResult);
-      }
-
-      if (this.subIndex > 0 && (this.subIndex < this.addIndex || this.addIndex < 0)) {
-        this.subResult = Number(this.evalItems[this.subIndex-1]) - Number(this.evalItems[this.subIndex+1]);
-        this.evalItems.splice(this.subIndex-1, 3, this.subResult);
-      }
-    }
     this.clear();
 
-    this.roundedResult = this.round(this.evalItems[0]);
+    this.roundedResult = this.round(this.evalItems.join());
 
     this.input.textContent = this.roundedResult;
+
     this.input.classList.toggle("evalMode");
 
-    this.updateHistory(this.evalExpression, this.roundedResult);
-    this.setLocalStorage(this.evalExpression, this.roundedResult);
+    this.updateHistory();
+    this.setLocalStorage();
   }
 
-  setLocalStorage(evalExpression, result) {
-    this.newExpression = {expression: evalExpression, result: result};
+  performAllOperations(operationA, operationB) {
+    while (this.evalItems.includes(operationA) || this.evalItems.includes(operationB)) {
+      let operationIndexA = this.evalItems.indexOf(operationA);
+      let operationIndexB = this.evalItems.indexOf(operationB);
+
+      if (this.checkFunctionPrecedence(operationIndexA, operationIndexB)) {
+        this.setNumbers(operationIndexA - 1, operationIndexA + 1);
+        this.setResult(operationA);
+        this.distillResult(operationIndexA - 1);
+      }
+      if (this.checkFunctionPrecedence(operationIndexB, operationIndexA)) {
+        this.setNumbers(operationIndexB - 1, operationIndexB + 1);
+        this.setResult(operationB);
+        this.distillResult(operationIndexB - 1);
+      }
+    }
+  }
+
+  checkFunctionPrecedence(operationIndexA, operationIndexB) {
+    //Perform operation A if: it exists, it comes before B, or B doesn't exist
+    return operationIndexA > 0 && (operationIndexA < operationIndexB || operationIndexB < 0);
+  }
+
+  setNumbers(indexA, indexB) {
+    this.a = Number(this.evalItems[indexA]);
+    this.b = Number(this.evalItems[indexB]);
+  }
+
+  setResult(symbol) {
+    let operationFunction = this.operations.findIndex(operation => operation.symbol == symbol);
+    this.result = this.operations[operationFunction].function.call();
+  }
+
+  distillResult(index) {
+    this.evalItems.splice(index, 3, this.result);
+  }
+
+  setLocalStorage() {
+    this.newExpression = {expression: this.evalExpression, result: this.roundedResult};
     this.historyArray = [];
 
     if (localStorage.history) this.historyArray = JSON.parse(localStorage.history);
@@ -202,13 +235,17 @@ class Calculator {
     if (!localStorage.history) return;
 
     this.historyArray = JSON.parse(localStorage.history);
-    this.historyArray.map(item => this.updateHistory(item.expression, item.result));
+    this.historyArray.map(item => {
+      this.evalExpression = item.expression;
+      this.roundedResult = item.result;
+      this.updateHistory()
+    });
   }
 
-  updateHistory(evalExpression, result) {
+  updateHistory() {
     this.storedExpression = document.createElement("span");
     this.storedExpression.setAttribute("class", "storedExpressions");
-    this.storedExpression.textContent = `${evalExpression} = ${result}`
+    this.storedExpression.textContent = `${this.evalExpression} = ${this.roundedResult}`
 
     //limit storage to 10 expressions
     if (this.history.children.length >= 10) {
@@ -225,7 +262,7 @@ class Calculator {
   }
 
   clearHistory() {
-    for (i = this.history.children.length - 1; i > 0; i--) {
+    for (let i = this.history.children.length - 1; i > 0; i--) {
       this.history.removeChild(this.history.children[i]);
       localStorage.clear();
     }
@@ -239,7 +276,7 @@ calculator.loadHistory();
 window.addEventListener("keydown", addKeyboard);
 
 function addKeyboard(e) {
-  e.preventDefault();
+  if (e.key == "/") e.preventDefault();
   if (e.key >= 0 && e.key <= 9) calculator.inputNumbers(e.key);
   if (e.key == "-") calculator.turnNegative();
   //Evoke expression function if operation key is pressed
