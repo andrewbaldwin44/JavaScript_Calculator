@@ -1,6 +1,6 @@
 class Calculator {
   constructor() {
-    this.history = document.querySelector("#history");
+    this.historyDisplay = document.querySelector("#history");
     this.clearHistoryButton = document.querySelector("#clearHistory");
     this.input = document.querySelector("#input");
     this.expression = document.querySelector("#expression");
@@ -116,6 +116,7 @@ class Calculator {
     //Ignore negative symbol
     if ((this.expression.textContent && !this.expressionList.includes(this.lastExpressionItem) ||
         this.input.textContent) && this.input.textContent != "-") {
+
       this.expression.textContent += `${this.input.textContent} ${operation} `;
       this.input.textContent = "";
     }
@@ -126,17 +127,21 @@ class Calculator {
     //Add zero if no number preceding number
     if (!this.input.textContent.includes(".")) {
       this.toggleEvalMode();
+
       this.lastInputItem = this.input.textContent.slice(-1);
+
       if (!Number(this.lastInputItem)) this.input.textContent += 0;
+
       this.input.textContent += ".";
     }
   }
 
   turnNegative() {
     if (this.toggleEvalMode()) this.clear();
-    this.lastInputItem = this.input.textContent.slice(-1);
-    if (!Number(this.lastInputItem) && this.lastInputItem != "-") {
 
+    this.lastInputItem = this.input.textContent.slice(-1);
+
+    if (!Number(this.lastInputItem) && this.lastInputItem != "-") {
       this.input.textContent += "-";
     }
   }
@@ -172,17 +177,18 @@ class Calculator {
 
     this.input.textContent = this.roundedResult;
 
-    this.input.classList.toggle("evalMode");
+    this.input.classList.add("evalMode");
 
-    this.updateHistory();
-    this.setLocalStorage();
+    let fullExpression = `${this.evalExpression} = ${this.roundedResult}`;
+    this.updateHistory(fullExpression);
+    this.setExpressionHistory(fullExpression);
   }
 
   performAllOperations(operationA, operationB) {
     while (this.evalItems.includes(operationA) || this.evalItems.includes(operationB)) {
-      let operationIndexA = this.evalItems.indexOf(operationA);
-      let operationIndexB = this.evalItems.indexOf(operationB);
-      let precedentOperation = this.giveFunctionPrecedence(operationIndexA, operationIndexB);
+      this.operationIndexA = this.evalItems.indexOf(operationA);
+      this.operationIndexB = this.evalItems.indexOf(operationB);
+      let precedentOperation = this.giveFunctionPrecedence();
 
       if (precedentOperation) {
         this.setNumbers(precedentOperation - 1, precedentOperation + 1);
@@ -192,11 +198,11 @@ class Calculator {
     }
   }
 
-  giveFunctionPrecedence(operationIndexA, operationIndexB) {
+  giveFunctionPrecedence() {
     //Perform operation A if: it exists, it comes before B, or B doesn't exist
-    return operationIndexA > 0 && (operationIndexA < operationIndexB || operationIndexB < 0)
-      ? operationIndexA
-      : operationIndexB;
+    return this.operationIndexA > 0 && (this.operationIndexA < this.operationIndexB || this.operationIndexB < 0)
+      ? this.operationIndexA
+      : this.operationIndexB;
   }
 
   setNumbers(indexA, indexB) {
@@ -210,21 +216,11 @@ class Calculator {
   }
 
   distillResult(index) {
+    //Expression is distilled into result
     this.evalItems.splice(index, 3, this.result);
   }
 
-  roundResult(number) {return Math.round(number * 1e12) / 1e12;}
-
-  setLocalStorage() {
-    this.newExpression = {expression: this.evalExpression, result: this.roundedResult};
-    this.historyArray = [];
-
-    if (localStorage.history) this.historyArray = JSON.parse(localStorage.history);
-
-    this.historyArray.push(this.newExpression);
-
-    localStorage.setItem("history", JSON.stringify(this.historyArray));
-  }
+  roundResult(number) {return Math.round(number * 1e10) / 1e10;}
 
   toggleEvalMode() {
     if (this.input.classList.contains("evalMode")) {
@@ -233,39 +229,45 @@ class Calculator {
     }
   }
 
-  loadHistory() {
-    if (!localStorage.history) return;
+  setLocalStorage() {localStorage.setItem("expressionHistory", JSON.stringify(this.expressionHistory));}
 
-    this.historyArray = JSON.parse(localStorage.history);
-    this.historyArray.map(item => {
-      this.evalExpression = item.expression;
-      this.roundedResult = item.result;
-      this.updateHistory()
-    });
+  setExpressionHistory(fullExpression) {
+    this.expressionHistory
+      ? this.expressionHistory.push(fullExpression)
+      : this.expressionHistory = [fullExpression];
+
+    this.setLocalStorage();
   }
 
-  updateHistory() {
+  loadHistory() {
+    if (localStorage.expressionHistory) {
+      this.expressionHistory = JSON.parse(localStorage.expressionHistory);
+      this.expressionHistory.map(fullExpression => this.updateHistory(fullExpression));
+    }
+  }
+
+  updateHistory(fullExpression) {
     this.storedExpression = document.createElement("span");
     this.storedExpression.setAttribute("class", "storedExpressions");
-    this.storedExpression.textContent = `${this.evalExpression} = ${this.roundedResult}`
+    this.storedExpression.textContent = fullExpression;
 
     //limit storage to 10 expressions
-    if (this.history.children.length >= 10) {
-      this.history.removeChild(this.history.children[0]);
+    if (this.historyDisplay.children.length >= 10) {
+      this.historyDisplay.removeChild(this.historyDisplay.children[0]);
 
-      this.historyArray = JSON.parse(localStorage.history)
-      this.historyArray.splice(0, 1);
-      localStorage.setItem("history", JSON.stringify(this.historyArray));
+      this.expressionHistory.splice(0, 1);
+
+      this.setLocalStorage();
     }
 
-    this.history.append(this.storedExpression);
+    this.historyDisplay.append(this.storedExpression);
 
-    this.history.scrollTop = this.history.scrollHeight;
+    this.historyDisplay.scrollTop = this.historyDisplay.scrollHeight;
   }
 
   clearHistory() {
-    for (let i = this.history.children.length - 1; i > 0; i--) {
-      this.history.removeChild(this.history.children[i]);
+    for (let i = this.historyDisplay.children.length - 1; i > 0; i--) {
+      this.historyDisplay.removeChild(this.historyDisplay.children[i]);
       localStorage.clear();
     }
   }
@@ -275,9 +277,7 @@ let calculator = new Calculator();
 calculator.createNumbers();
 calculator.loadHistory();
 
-window.addEventListener("keydown", addKeyboard);
-
-function addKeyboard(e) {
+window.addEventListener("keydown", e => {
   if (e.key == "/") e.preventDefault();
   if (e.key >= 0 && e.key <= 9) calculator.inputNumbers(e.key);
   if (e.key == "-") calculator.turnNegative();
@@ -287,4 +287,4 @@ function addKeyboard(e) {
   if (e.key == "Backspace") calculator.del();
   if (e.key == "c") calculator.clear();
   if (e.key == "Enter" || e.key == "=") calculator.evaluate();
-}
+});
