@@ -51,7 +51,6 @@ class Calculator {
 
     this.operations.map(operation => this.createOperations(operation));
     this.clearHistoryButton.addEventListener("click", () => this.clearHistory());
-    this.round = float => Math.round(float * 1e12) / 1e12;
   }
 
   createNumbers() {
@@ -104,18 +103,18 @@ class Calculator {
   }
 
   inputNumbers(number) {
-    if (this.input.classList.contains("evalMode")) this.toggleEvalMode();
+    if (this.toggleEvalMode()) this.clear();
     if (this.input.textContent.length <= 15) this.input.textContent += number;
   }
 
   updateExpression(operation) {
-    if (this.input.classList.contains("evalMode")) this.input.classList.toggle("evalMode");
+    this.toggleEvalMode();
 
-    this.lastItem = this.expression.textContent.slice(-2, -1);
+    this.lastExpressionItem = this.expression.textContent.slice(-2, -1);
 
     //Don't allow operation insert if inputs are blank and don't allow 2 symbols in a row
     //Ignore negative symbol
-    if ((this.expression.textContent && !this.expressionList.includes(this.lastItem) ||
+    if ((this.expression.textContent && !this.expressionList.includes(this.lastExpressionItem) ||
         this.input.textContent) && this.input.textContent != "-") {
       this.expression.textContent += `${this.input.textContent} ${operation} `;
       this.input.textContent = "";
@@ -126,17 +125,18 @@ class Calculator {
     //Only one decimal point per number
     //Add zero if no number preceding number
     if (!this.input.textContent.includes(".")) {
-       if (!Number(this.input.textContent.slice(-1))) this.input.textContent += 0;
+      this.toggleEvalMode();
+      this.lastInputItem = this.input.textContent.slice(-1);
+      if (!Number(this.lastInputItem)) this.input.textContent += 0;
       this.input.textContent += ".";
     }
   }
 
   turnNegative() {
-    if (this.input.classList.contains("evalMode")) this.toggleEvalMode();
+    if (this.toggleEvalMode()) this.clear();
+    this.lastInputItem = this.input.textContent.slice(-1);
+    if (!Number(this.lastInputItem) && this.lastInputItem != "-") {
 
-    this.lastItem = this.input.textContent.slice(-1);
-
-    if (!Number(this.lastItem) && this.lastItem != "-") {
       this.input.textContent += "-";
     }
   }
@@ -148,18 +148,13 @@ class Calculator {
 
   del() {
     if (!this.input.textContent) {
-      this.lastItem = this.expression.textContent.slice(-1);
+      this.lastExpressionItem = this.expression.textContent.slice(-1);
 
-      this.lastItem == " " //Ignore Spaces
+      this.lastExpressionItem == " " //Ignore Spaces
         ? this.expression.textContent = this.expression.textContent.slice(0, -2)
         : this.expression.textContent = this.expression.textContent.slice(0, -1);
     }
     this.input.textContent = this.input.textContent.slice(0, -1);
-  }
-
-  toggleEvalMode() {
-    this.input.classList.toggle("evalMode");
-    this.clear();
   }
 
   evaluate() {
@@ -173,7 +168,7 @@ class Calculator {
 
     this.clear();
 
-    this.roundedResult = this.round(this.evalItems.join());
+    this.roundedResult = this.roundResult(this.evalItems.join());
 
     this.input.textContent = this.roundedResult;
 
@@ -187,23 +182,21 @@ class Calculator {
     while (this.evalItems.includes(operationA) || this.evalItems.includes(operationB)) {
       let operationIndexA = this.evalItems.indexOf(operationA);
       let operationIndexB = this.evalItems.indexOf(operationB);
+      let precedentOperation = this.giveFunctionPrecedence(operationIndexA, operationIndexB);
 
-      if (this.checkFunctionPrecedence(operationIndexA, operationIndexB)) {
-        this.setNumbers(operationIndexA - 1, operationIndexA + 1);
-        this.setResult(operationA);
-        this.distillResult(operationIndexA - 1);
-      }
-      if (this.checkFunctionPrecedence(operationIndexB, operationIndexA)) {
-        this.setNumbers(operationIndexB - 1, operationIndexB + 1);
-        this.setResult(operationB);
-        this.distillResult(operationIndexB - 1);
+      if (precedentOperation) {
+        this.setNumbers(precedentOperation - 1, precedentOperation + 1);
+        this.setResult(this.evalItems[precedentOperation]);
+        this.distillResult(precedentOperation - 1);
       }
     }
   }
 
-  checkFunctionPrecedence(operationIndexA, operationIndexB) {
+  giveFunctionPrecedence(operationIndexA, operationIndexB) {
     //Perform operation A if: it exists, it comes before B, or B doesn't exist
-    return operationIndexA > 0 && (operationIndexA < operationIndexB || operationIndexB < 0);
+    return operationIndexA > 0 && (operationIndexA < operationIndexB || operationIndexB < 0)
+      ? operationIndexA
+      : operationIndexB;
   }
 
   setNumbers(indexA, indexB) {
@@ -220,6 +213,8 @@ class Calculator {
     this.evalItems.splice(index, 3, this.result);
   }
 
+  roundResult(number) {return Math.round(number * 1e12) / 1e12;}
+
   setLocalStorage() {
     this.newExpression = {expression: this.evalExpression, result: this.roundedResult};
     this.historyArray = [];
@@ -229,6 +224,13 @@ class Calculator {
     this.historyArray.push(this.newExpression);
 
     localStorage.setItem("history", JSON.stringify(this.historyArray));
+  }
+
+  toggleEvalMode() {
+    if (this.input.classList.contains("evalMode")) {
+      this.input.classList.toggle("evalMode");
+      return true;
+    }
   }
 
   loadHistory() {
